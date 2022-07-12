@@ -145,7 +145,7 @@ def profile_follow(request, username):
     follower = request.user
     following = User.objects.get(username=username)
     is_already_follow = Follow.objects.filter(
-        user=follower, author=following).exists() 
+        user=follower, author=following).exists()
     if follower != following and not is_already_follow:
         Follow.objects.create(
             user=follower,
