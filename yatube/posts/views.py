@@ -142,10 +142,14 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    Follow.objects.create(
-        user=request.user,
-        author=User.objects.get(username=username)
-    )
+    follower = request.user
+    following = User.objects.get(username=username)
+    if follower != following and not Follow.objects.filter(
+        user=follower, author=following).exists():
+        Follow.objects.create(
+            user=follower,
+            author=following
+        )
     return redirect('posts:profile', username=username)
 
 
