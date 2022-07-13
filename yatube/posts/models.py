@@ -111,13 +111,13 @@ class Follow(models.Model):
     )
 
     class Meta:
-        constraints = [
+        constraints = (
             models.CheckConstraint(
                 name='constraint_self_follow',
                 check=~models.Q(user=models.F('author'))
             ),
             models.UniqueConstraint(
                 name='follower_and_folowwing_have_unique_relationships',
-                fields=['user', 'author']
+                fields=('user', 'author')
             )
-        ]
+        )

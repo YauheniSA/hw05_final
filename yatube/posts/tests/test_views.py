@@ -48,11 +48,6 @@ class PostsPagesTestsContext(TestCase):
             group=cls.group,
             image=uploaded
         )
-        cls.comment = Comment.objects.create(
-            post=cls.post,
-            text='Тестовый комментарий',
-            author=cls.author
-        )
 
     @classmethod
     def tearDownClass(cls):
@@ -230,8 +225,7 @@ class FollowPagesTests(TestCase):
         self.not_follower_client.force_login(self.not_follwer)
 
     def test_authorized_client_can_follow(self):
-        """Авторизированный пользователь может стать подписчиком
-        и затем отписаться."""
+        """Авторизированный пользователь может стать подписчиком."""
         followers_count_zero = Follow.objects.count()
         self.follower_client.get(
             reverse('posts:profile_follow',
@@ -240,6 +234,14 @@ class FollowPagesTests(TestCase):
         )
         folowwers_count_one = Follow.objects.count()
         self.assertEqual(folowwers_count_one, followers_count_zero + 1)
+
+    def test_follower_can_unfollow(self):
+        """Подписчик может описаться."""
+        Follow.objects.create(
+            user=self.follower,
+            author=self.author
+        )
+        folowwers_count_one = Follow.objects.count()
         self.follower_client.get(
             reverse('posts:profile_unfollow',
                     kwargs={'username': self.author.username}
@@ -270,3 +272,42 @@ class FollowPagesTests(TestCase):
             len(follower_context),
             len(not_follower_context)
         )
+
+
+class CommentTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.author = User.objects.create_user(username='TestUserAuthor')
+        cls.post = Post.objects.create(
+            author=cls.author,
+            text='I want to read your comments',
+        )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.author,
+            text='I want to read your posts'
+        )
+
+    def setUp(self):
+        self.author_client = Client()
+        self.author_client.force_login(self.author)
+        self.response = self.author_client.get(
+            reverse('posts:post_detail', kwargs={'post_id': self.post.id})
+        )
+
+    def test_view_add_comment_uses_correact_form(self):
+        """Поля формы Comment имеют правильные значения на странице
+        post_detail.
+        """
+        get_field = self.response.context.get('form').fields.get('text')
+        expected_field = forms.fields.CharField
+        self.assertIsInstance(get_field, expected_field)
+
+    def test_comments_are_in_context_page_post_detail(self):
+        """Комментарии передаются в контексте при генерации шаблона
+        post_detail.
+        """
+        get_field = self.response.context.get('comments')[0]
+        expected_field = self.comment.text
+        self.assertEqual(get_field.text, expected_field)

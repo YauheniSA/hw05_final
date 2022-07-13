@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.conf import settings
 
-from posts.models import Post, Group
+from posts.models import Post, Group, Comment
 
 User = get_user_model()
 POSTS_PER_SECOND_PAGE = 3
@@ -104,3 +104,41 @@ class PostFormTest(TestCase):
         )
         get_object = response.context['post']
         self.check_post(get_object, form_data)
+
+
+class CommentFormTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.commentator = User.objects.create_user(username='TestUserAuthor3')
+        cls.post = Post.objects.create(
+            text='TestPostText',
+            author=cls.commentator
+        )
+
+    def setUp(self):
+        self.commentator_client = Client()
+        self.commentator_client.force_login(self.commentator)
+
+    def test_add_comment_form(self):
+        """Валидная форма создает забись в модели Comment"""
+        form_data = {'text': 'TestCommentTest'}
+        comment_count = Comment.objects.filter(post=self.post).count()
+        response = self.commentator_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            data=form_data,
+            follow=True
+        )
+        self.assertRedirects(
+            response, reverse(
+                'posts:post_detail', kwargs={'post_id': self.post.id}
+            )
+        )
+        self.assertEqual(
+            Comment.objects.filter(post=self.post).count(),
+            comment_count + 1
+        )
+        self.assertEqual(
+            Comment.objects.get(post=self.post).text,
+            form_data['text']
+        )

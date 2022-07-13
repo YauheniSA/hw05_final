@@ -63,19 +63,24 @@ class StaticURLTests(TestCase):
                 )
 
     def test_url_redirect_guest_client(self):
-        """Страницы create/ и post/edit/ перенаправят анонимного пользователя
-        на страницу логина.
+        """Страницы create/, post/edit/, posts/<int:post_id>/comment/
+        follow/, profile/<str:username>/follow/,
+        profile/<str:username>/unfollow/
+        перенаправят анонимного пользователя на страницу логина.
         """
-        field_url_desired = {
-            '/create/': '/auth/login/?next=/create/',
-            f'/posts/{self.post.id}/edit/':
-            f'/auth/login/?next=/posts/{self.post.id}/edit/'
-        }
-        for field, expected_value in field_url_desired.items():
+        field_url_desired = (
+            '/create/',
+            f'/posts/{self.post.id}/edit/',
+            f'/posts/{self.post.id}/comment/',
+            '/follow/',
+            '/profile/TestUserName/follow/',
+            '/profile/TestUserName/unfollow/'
+        )
+        for field in field_url_desired:
             with self.subTest(field=field):
                 self.assertRedirects(
                     self.guest_client.get(field, follow=True),
-                    expected_value
+                    '/auth/login/?next=' + field
                 )
 
     def test_url_redirect_authorized_client(self):
@@ -95,6 +100,7 @@ class StaticURLTests(TestCase):
             f'/posts/{self.post.id}/': 'posts/post_detail.html',
             '/create/': 'posts/create_post.html',
             f'/posts/{self.post.id}/edit/': 'posts/create_post.html',
+            '/follow/': 'posts/follow.html',
         }
         for field, template in templates_url_names.items():
             with self.subTest(field=field):
@@ -103,11 +109,18 @@ class StaticURLTests(TestCase):
                     template
                 )
 
-    def test_url_post_comment_at_guest_user(self):
-        """Навторизированный при попытке оставить комментарий
-        перенаправляется на страницу входа.
-        """
-        self.assertRedirects(
-            self.guest_client.get(f'/posts/{self.post.id}/comment/'),
-            f'/auth/login/?next=/posts/{self.post.id}/comment/'
+    def test_follow_and_unfollow_pages_redirexts(self):
+        """Страницы profile/<str:username>/follow/ и
+        profile/<str:username>/unfollow/ после действия перенаправляют
+        на страницу profile/<str:username>/."""
+        expected_url = '/profile/TestUserName/'
+        field_url_desired = (
+            '/profile/TestUserName/follow/',
+            '/profile/TestUserName/unfollow/'
         )
+        for field in field_url_desired:
+            with self.subTest(field=field):
+                self.assertRedirects(
+                    self.authorized_client.get(field, follow=True),
+                    expected_url
+                )

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
-from posts.models import Group, Post
+from posts.models import Group, Post, Comment, Follow
 
 
 User = get_user_model()
@@ -97,4 +97,95 @@ class GroupModelTest(TestCase):
             with self.subTest(field=field):
                 self.assertEqual(
                     group._meta.get_field(field).help_text, expected_value
+                )
+
+
+class CommentModelTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='auth')
+        cls.post = Post.objects.create(
+            author=cls.user,
+            text='Тестовый пост',
+        )
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.user,
+            text='I want to read your posts'
+        )
+
+    def test_model_comment_have_correct_object_name(self):
+        """__str__ comment - это строчка с содержимым comment.text[:15]"""
+        comment = CommentModelTest.comment
+        expected_object_text = comment.text[:15]
+        self.assertEqual(expected_object_text, str(comment))
+
+    def test_model_comment_verbose_name(self):
+        """verbose_name в модели Comment совпадает с ожидаемым"""
+        comment = CommentModelTest.comment
+        field_verboses = {
+            'post': 'Комментарий',
+            'author': 'Автор комментария',
+            'text': 'Текст комменатрия',
+            'created': 'Дата публикации комментария'
+        }
+        for field, expected_value in field_verboses.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    comment._meta.get_field(field).verbose_name, expected_value
+                )
+
+    def test_model_comment_verbose_name(self):
+        """help_text в модели Comment совпадает с ожидаемым"""
+        comment = CommentModelTest.comment
+        field_help_text = {
+            'post': 'Оставьте Ваш комментарий',
+            'author': 'Имя автора комментария',
+            'text': 'Введите текст комменатрия',
+            'created': ('Автоматическое добавление времени'
+                        ' публикации комментария')
+        }
+        for field, expected_value in field_help_text.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    comment._meta.get_field(field).help_text, expected_value
+                )
+
+
+class FollowModelTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username='follower')
+        cls.author = User.objects.create_user(username='author')
+        cls.follow = Follow.objects.create(
+            user=cls.user,
+            author=cls.author
+        )
+
+    def test_model_follow_verbose_name(self):
+        """verbose_name в модели Follow совпадает с ожидаемым"""
+        follow = FollowModelTest.follow
+        field_verboses = {
+            'user': 'Подписчик',
+            'author': 'Имена подписчиков'
+        }
+        for field, expected_value in field_verboses.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    follow._meta.get_field(field).verbose_name, expected_value
+                )
+
+    def test_model_follow_verbose_name(self):
+        """help_text в модели Follow совпадает с ожидаемым"""
+        follow = FollowModelTest.follow
+        field_help_text = {
+            'user': 'Имена подписчиков',
+            'author': 'Имена авторов, на которых подписан'
+        }
+        for field, expected_value in field_help_text.items():
+            with self.subTest(field=field):
+                self.assertEqual(
+                    follow._meta.get_field(field).help_text, expected_value
                 )
