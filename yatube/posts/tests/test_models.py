@@ -164,6 +164,14 @@ class FollowModelTest(TestCase):
             author=cls.author
         )
 
+    def test_model_follow_have_correct_object_name(self):
+        """__str__ foolow - это строчка с содержимым
+        {self.user} подписан на {self.author}.
+        """
+        follow = FollowModelTest.follow
+        expected_object_text = f'{self.user} подписан на {self.author}.'
+        self.assertEqual(expected_object_text, str(follow))
+
     def test_model_follow_verbose_name(self):
         """verbose_name в модели Follow совпадает с ожидаемым"""
         follow = FollowModelTest.follow

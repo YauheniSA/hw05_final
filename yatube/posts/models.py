@@ -20,6 +20,10 @@ class Group(models.Model):
         help_text='Текстовое поле без ограничений по количеству символов'
     )
 
+    class Meta:
+        verbose_name = 'Группа'
+        verbose_name_plural = 'Группы'
+
     def __str__(self) -> str:
         return self.title
 
@@ -57,6 +61,8 @@ class Post(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Пост'
+        verbose_name_plural = 'Посты'
         ordering = ('-pub_date',)
 
     def __str__(self) -> str:
@@ -90,6 +96,10 @@ class Comment(models.Model):
         help_text='Автоматическое добавление времени публикации комментария'
     )
 
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+
     def __str__(self) -> str:
         return self.text[:15]
 
@@ -111,6 +121,8 @@ class Follow(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Подписка'
+        verbose_name_plural = 'Подписки'
         constraints = (
             models.CheckConstraint(
                 name='constraint_self_follow',
@@ -121,3 +133,6 @@ class Follow(models.Model):
                 fields=('user', 'author')
             )
         )
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}.'

@@ -143,7 +143,7 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     follower = request.user
-    following = User.objects.get(username=username)
+    following = get_object_or_404(User, username=username)
     if follower != following:
         Follow.objects.get_or_create(
             user=follower,

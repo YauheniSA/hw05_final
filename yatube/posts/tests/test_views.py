@@ -234,6 +234,9 @@ class FollowPagesTests(TestCase):
         )
         folowwers_count_one = Follow.objects.count()
         self.assertEqual(folowwers_count_one, followers_count_zero + 1)
+        new_follow = Follow.objects.latest('id')
+        self.assertEqual(self.author, new_follow.author)
+        self.assertEqual(self.follower, new_follow.user)
 
     def test_follower_can_unfollow(self):
         """Подписчик может описаться."""
@@ -249,6 +252,7 @@ class FollowPagesTests(TestCase):
         )
         followers_count_unfollow = Follow.objects.count()
         self.assertEqual(followers_count_unfollow, folowwers_count_one - 1)
+        self.assertFalse(Follow.objects.filter(user=self.follower).exists())
 
     def test_check_a_new_post_for_followers(self):
         """Новая запись пользователя появляется в ленте тех,
@@ -283,11 +287,11 @@ class CommentTest(TestCase):
             author=cls.author,
             text='I want to read your comments',
         )
-        cls.comment = Comment.objects.create(
+        """cls.comment = Comment.objects.create(
             post=cls.post,
             author=cls.author,
             text='I want to read your posts'
-        )
+        )"""
 
     def setUp(self):
         self.author_client = Client()
@@ -296,7 +300,15 @@ class CommentTest(TestCase):
             reverse('posts:post_detail', kwargs={'post_id': self.post.id})
         )
 
-    def test_view_add_comment_uses_correact_form(self):
+    def add_comment(self):
+        form_data = {'text': 'TestCommentTest'}
+        return self.author_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            data=form_data,
+            follow=True
+        )
+
+    def test_view_add_comment_uses_correct_form(self):
         """Поля формы Comment имеют правильные значения на странице
         post_detail.
         """
@@ -304,10 +316,28 @@ class CommentTest(TestCase):
         expected_field = forms.fields.CharField
         self.assertIsInstance(get_field, expected_field)
 
+    def test_view_add_comment_add_new_object_in_model(self):
+        """Функция добавляет объект модели Comment в базу."""
+        comment_count = Comment.objects.filter(post=self.post).count()
+        response = self.add_comment()
+        self.assertRedirects(
+            response, reverse(
+                'posts:post_detail', kwargs={'post_id': self.post.id}
+            )
+        )
+        self.assertEqual(
+            Comment.objects.filter(post=self.post).count(),
+            comment_count + 1
+        )
+
     def test_comments_are_in_context_page_post_detail(self):
         """Комментарии передаются в контексте при генерации шаблона
         post_detail.
         """
-        get_field = self.response.context.get('comments')[0]
-        expected_field = self.comment.text
+        self.add_comment()
+        response = self.author_client.get(
+            reverse('posts:post_detail', kwargs={'post_id': self.post.id})
+        )
+        get_field = response.context.get('comments')[0]
+        expected_field = Comment.objects.latest('id').text
         self.assertEqual(get_field.text, expected_field)

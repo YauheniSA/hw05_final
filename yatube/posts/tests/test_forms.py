@@ -142,3 +142,11 @@ class CommentFormTest(TestCase):
             Comment.objects.get(post=self.post).text,
             form_data['text']
         )
+        self.assertEqual(
+            Comment.objects.get(post=self.post).author,
+            self.commentator
+        )
+        self.assertEqual(
+            Comment.objects.get(post=self.post).post,
+            self.post
+        )
